@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>書泓大富翁</title>
+<style>
+:root{
+  color-scheme: light dark;
+  --page:#d9ebe4; --panel:#f6fbf8; --cell:#fdfffe; --ink:#1d2b27; --muted:#62746e; --line:#b4cfc5;
+  --btn:#b3322a; --btnink:#fff; --shadow:rgba(20,50,40,.25);
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --page:#0d1c19; --panel:#173029; --cell:#1b3a32; --ink:#eaf3ef; --muted:#93b0a6; --line:#2f5348;
+    --btn:#d6453b; --btnink:#fff; --shadow:rgba(0,0,0,.5);
+  }
+}
+:root[data-theme="dark"]{
+  --page:#0d1c19; --panel:#173029; --cell:#1b3a32; --ink:#eaf3ef; --muted:#93b0a6; --line:#2f5348;
+  --btn:#d6453b; --btnink:#fff; --shadow:rgba(0,0,0,.5);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{height:100%;margin:0;overflow:hidden;background:var(--page);color:var(--ink);
+  font-family:"PingFang TC","Noto Sans TC","Microsoft JhengHei","Heiti TC",system-ui,-apple-system,sans-serif;
+  -webkit-user-select:none;user-select:none;touch-action:manipulation}
+#vp{height:100%;padding:0 env(safe-area-inset-right,0px) 0 env(safe-area-inset-left,0px)}
+#fit{position:relative;width:100%;height:100%;overflow:hidden}
+#stage{position:absolute;left:0;top:0;width:840px;height:400px;transform-origin:0 0}
+button{font-family:inherit}
+.btn{border:0;border-radius:8px;padding:6px 12px;min-height:30px;background:var(--btn);color:var(--btnink);font-size:13px;font-weight:700;cursor:pointer}
+.btn.alt{background:var(--line);color:var(--ink)}
+.btn.big{font-size:16px;padding:9px 12px;min-height:40px}
+.btn.sm{padding:4px 8px;min-height:28px;font-size:13px}
+.btn:disabled{opacity:.38;cursor:default}
+.btn:active:not(:disabled){transform:scale(.96)}
+
+#board{position:absolute;left:4px;top:4px;width:596px;height:392px;display:grid;
+  grid-template-columns:repeat(10,1fr);grid-template-rows:repeat(6,1fr);gap:2px}
+.cell{position:relative;background:var(--cell);border:1px solid var(--line);border-radius:5px;overflow:hidden;
+  display:flex;flex-direction:column;align-items:center;text-align:center;line-height:1.15;cursor:pointer;min-width:0}
+.band{width:100%;height:16px;display:flex;align-items:center;justify-content:center;font-size:12px;flex:none}
+.nm{font-weight:700;font-size:12px;margin-top:2px;white-space:nowrap}
+.sub{font-size:10px;color:var(--muted);white-space:nowrap}
+.corner .big{font-size:22px;margin-top:6px}
+.corner .nm{font-size:12px}
+.tk{position:absolute;left:0;right:0;bottom:1px;display:flex;justify-content:center;flex-wrap:wrap;gap:1px;pointer-events:none}
+.tok{width:17px;height:17px;border-radius:50%;border:2px solid;background:#fff;font-size:10px;display:flex;align-items:center;justify-content:center;line-height:1}
+.tok.cur{transform:scale(1.25);box-shadow:0 0 0 2px #ffd54a,0 0 8px #ffd54a;z-index:2}
+
+#center{grid-area:2/2/6/10;display:flex;gap:8px;padding:6px;min-width:0;background:var(--panel);border-radius:10px;box-shadow:inset 0 0 0 1px var(--line)}
+#logbox{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden;font-size:11.5px;line-height:1.45;color:var(--ink)}
+#logbox div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#ctrl{width:152px;display:flex;flex-direction:column;gap:5px;flex:none}
+#turnlab{font-size:12px;font-weight:700;text-align:center;line-height:1.3}
+#turnlab small{display:block;color:var(--muted);font-weight:500}
+#dice{display:flex;gap:8px;justify-content:center;height:40px}
+.die{width:38px;height:38px;background:#fff;border-radius:7px;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);padding:5px;box-shadow:0 1px 3px var(--shadow),inset 0 0 0 1px #ddd}
+.die i{display:block;margin:1px;border-radius:50%}
+.die i.p{background:#222}
+.row2,.row3{display:flex;gap:4px}
+.row2 .btn,.row3 .btn{flex:1;padding:4px 2px}
+
+#side{position:absolute;left:604px;top:4px;width:232px;height:392px;display:flex;flex-direction:column;gap:4px}
+.pc{flex:1;max-height:96px;min-height:0;background:var(--panel);border-radius:10px;padding:5px 10px;border-left:6px solid var(--pc);
+  box-shadow:inset 0 0 0 1px var(--line);display:flex;flex-direction:column;justify-content:center;gap:1px;transition:box-shadow .2s}
+.pc.act{box-shadow:inset 0 0 0 2px var(--pc),0 0 10px var(--pc)}
+.pc.dead{opacity:.4;filter:grayscale(1)}
+.pc .r1{display:flex;align-items:center;gap:6px;font-size:14px;font-weight:700}
+.pc .av{font-size:20px}
+.pc .tag{margin-left:auto;font-size:11px;color:var(--muted);font-weight:500}
+.pc .cash{font-size:21px;font-weight:800;letter-spacing:.3px;font-variant-numeric:tabular-nums}
+.pc .r3{font-size:11px;color:var(--muted)}
+
+#toast{position:absolute;left:302px;top:12px;transform:translateX(-50%);max-width:540px;padding:7px 16px;border-radius:22px;
+  background:rgba(18,28,26,.94);color:#fff;font-size:14px;font-weight:600;opacity:0;transition:opacity .2s;z-index:80;pointer-events:none;text-align:center}
+#toast.show{opacity:1}
+
+#modal{position:absolute;inset:0;background:rgba(5,15,12,.55);display:none;align-items:center;justify-content:center;z-index:50}
+#mpanel{background:var(--panel);color:var(--ink);border-radius:14px;padding:12px 16px;min-width:320px;max-width:640px;max-height:384px;overflow:auto;box-shadow:0 8px 30px var(--shadow),inset 0 0 0 1px var(--line)}
+#mpanel.wide{width:620px}
+#mpanel h3{margin:0 0 8px;font-size:17px;display:flex;align-items:center;gap:8px}
+#mpanel h3 .cash{margin-left:auto;font-size:14px;color:var(--muted);font-weight:600}
+.mb{font-size:14px;line-height:1.6}
+.mbtn{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+.mbtn .btn{min-width:84px;min-height:36px;font-size:14px}
+.cardtxt{font-size:18px;font-weight:700;padding:10px 4px;line-height:1.5}
+.gdot{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+table.stk{width:100%;border-collapse:collapse;font-size:13px}
+table.stk th{font-weight:600;color:var(--muted);text-align:left;padding:2px 4px;font-size:12px}
+table.stk td{padding:3px 4px;border-top:1px solid var(--line);vertical-align:middle;font-variant-numeric:tabular-nums}
+table.stk .btn{padding:3px 8px;min-height:30px;min-width:44px;font-size:13px}
+.up{color:#d23b3b;font-weight:700}.dn{color:#1f9d55;font-weight:700}
+:root:not([data-theme="light"]) .dn{color:#4fd48a}
+.alist{display:flex;flex-direction:column;gap:4px}
+.arow{display:flex;align-items:center;gap:8px;font-size:13px;padding:4px 0;border-top:1px solid var(--line)}
+.arow span.f{flex:1}
+
+#menu{position:absolute;inset:0;background:var(--page);z-index:100;display:flex;align-items:center;justify-content:center}
+.mcard{width:560px;text-align:center}
+.mcard h1{margin:0 0 4px;font-size:38px;letter-spacing:4px}
+.mcard p{margin:0 0 14px;color:var(--muted);font-size:14px;line-height:1.6}
+.opt{display:flex;align-items:center;gap:12px;justify-content:center;margin:8px 0}
+.opt>span{width:70px;text-align:right;font-weight:700;font-size:14px}
+.seg{display:flex;gap:6px}
+.seg button{border:2px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;padding:6px 14px;min-height:34px;font-size:14px;font-weight:700;cursor:pointer}
+.seg button.on{background:var(--btn);border-color:var(--btn);color:#fff}
+.mcard small{display:block;margin-top:12px;color:var(--muted);font-size:12px;line-height:1.6}
+.rules{font-size:12px;color:var(--muted);line-height:1.7;margin-top:6px}
+
+#center{position:relative;overflow:hidden}
+#center>*{position:relative;z-index:1}
+#center::before{content:"三重大叔";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-8deg);
+  font-size:62px;font-weight:900;letter-spacing:.1em;white-space:nowrap;pointer-events:none;z-index:0;
+  color:transparent;-webkit-text-stroke:1.5px var(--ink);opacity:.14}
+</style>
+</head>
+<body>
+<div id="vp"><div id="fit">
+<div id="stage">
+  <div id="board">
+    <div id="center">
+      <div id="logbox"></div>
+      <div id="ctrl">
+        <div id="turnlab"></div>
+        <div id="dice"></div>
+        <button class="btn big" id="rollbtn" disabled>🎲 擲骰子</button>
+        <div class="row2">
+          <button class="btn alt" id="bStock" disabled>📈 股市</button>
+          <button class="btn alt" id="bAsset" disabled>🏠 資產</button>
+        </div>
+        <div class="row3">
+          <button class="btn alt sm" id="bSpeed">⏩ ×1</button>
+          <button class="btn alt sm" id="bFull">⛶ 全螢幕</button>
+          <button class="btn alt sm" id="bMenu">☰</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="side"></div>
+  <div id="toast"></div>
+  <div id="modal"><div id="mpanel"></div></div>
+  <div id="menu">
+    <div class="mcard">
+      <h1>🎲 書泓大富翁</h1>
+      <p>買地蓋房、收過路費、炒股票。<br>讓所有電腦對手破產，你就獲勝！</p>
+      <div class="opt"><span>玩家人數</span><div class="seg" id="segN"><button data-v="2">你 + 1 電腦</button><button data-v="3" class="on">你 + 2 電腦</button><button data-v="4">你 + 3 電腦</button></div></div>
+      <div class="opt"><span>起始資金</span><div class="seg" id="segC"><button data-v="20000">$20,000</button><button data-v="30000" class="on">$30,000</button><button data-v="50000">$50,000</button></div></div>
+      <div class="opt"><button class="btn big" id="startBtn" style="min-width:200px">開始遊戲</button></div>
+      <div class="rules">每個人起始資金相同。踩到空地可買下，踩到自己的地可升級（最高 4 級），踩到別人的地要付過路費；同區四塊地全買下過路費 ×1.5。<br>輪到你時可買賣股票、出售土地；錢不夠付時會自動變賣資產，再不夠就破產。</div>
+      <small>手機請橫向握持（直拿時畫面會自動轉向）。安卓可按「全螢幕」；iPhone 可用 Safari「加入主畫面」。</small>
+    </div>
+  </div>
+</div>
+</div></div>
+
+<script>
+(function(){
+'use strict';
+const $=s=>document.querySelector(s);
+const fmt=n=>Math.round(n).toLocaleString('en-US');
+const rnd=a=>a[Math.floor(Math.random()*a.length)];
+const ri=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+const gauss=()=>(Math.random()+Math.random()+Math.random()-1.5)*2;
+let gid=0, speed=1, G={modal:false};
+async function sleep(ms){const g=gid;await new Promise(r=>setTimeout(r,ms/speed));if(g!==gid)await new Promise(()=>{});}
+
+/* ---------- 畫面縮放 / 直式自動轉向 ---------- */
+function fit(){
+  const fb=$('#fit'),W=fb.clientWidth,H=fb.clientHeight,st=$('#stage');
+  const portrait=H>W*1.05&&matchMedia('(pointer:coarse)').matches;
+  let s,tf;
+  if(portrait){s=Math.min(H/840,W/400);tf=`translate(${(W+400*s)/2}px,${(H-840*s)/2}px) rotate(90deg) scale(${s})`;}
+  else{s=Math.min(W/840,H/400);tf=`translate(${(W-840*s)/2}px,${(H-400*s)/2}px) scale(${s})`;}
+  st.style.transform=tf;
+}
+new ResizeObserver(fit).observe($('#fit'));
+addEventListener('resize',fit);addEventListener('orientationchange',()=>setTimeout(fit,200));fit();
+
+/* ---------- 地圖資料 ---------- */
+const GROUPS=[
+  {n:'澎湖',c:'#8d6e63',base:700},
+  {n:'花蓮',c:'#29a8e0',base:1000},
+  {n:'台南',c:'#e0558a',base:1400},
+  {n:'台中',c:'#f29a1f',base:1900},
+  {n:'台北',c:'#d32f2f',base:2600}
+];
+const LAYOUT=['S','0:馬公','0:七美','C','0:望安','1:太魯閣','1:七星潭','C','1:鯉魚潭','H','1:瑞穗',
+ '2:安平','2:赤崁樓','2:奇美','M','2:七股','C','3:逢甲','3:一中街','3:高美濕地','C','3:宮原眼科','0:吉貝','J',
+ '4:信義','4:大安','4:中山','4:士林'];
+const T=[];const gcnt=[0,0,0,0,0];
+LAYOUT.forEach((s,i)=>{
+  if(s==='S')T.push({t:'start',n:'起點',e:'🏁'});
+  else if(s==='C')T.push({t:'chance',n:(i===3||i===16)?'機會':'命運',e:'🎴'});
+  else if(s==='H')T.push({t:'hos',n:'醫院',e:'🏥'});
+  else if(s==='J')T.push({t:'jail',n:'監獄',e:'🚔'});
+  else if(s==='M')T.push({t:'stock',n:'股市',e:'📈'});
+  else{const [g,n]=s.split(':');const k=gcnt[+g]++;
+    T.push({t:'prop',n,g:+g,price:Math.round(GROUPS[+g].base*(1+0.1*k)/100)*100});}
+});
+const N=T.length;
+function pos(i){
+  if(i<=9)return[6,i+1];
+  if(i<=14)return[6-(i-9),10];
+  if(i<=23)return[1,10-(i-14)];
+  return[1+(i-23),1];
+}
+const MULT=[0.3,0.9,1.8,3,4.5];
+const BLD=['🚩','🏠','🏘️','🏢','🏙️'];
+const upCost=i=>Math.round(T[i].price*0.6/10)*10;
+function mono(i,o){const g=T[i].g;return T.every((x,j)=>x.t!=='prop'||x.g!==g||G.own[j]===o);}
+function tollAt(i,lv,m){return Math.round(T[i].price*MULT[lv]*(m?1.5:1)/10)*10;}
+function toll(i){const o=G.own[i];return tollAt(i,G.lvl[i],mono(i,o));}
+const sellValue=i=>Math.floor((T[i].price+G.lvl[i]*upCost(i))*0.75/10)*10;
+const invested=i=>T[i].price+G.lvl[i]*upCost(i);
+
+/* ---------- 股票 ---------- */
+const STK=[['義榮藥局',90,.07,'#3b82f6'],['茹盈護理',45,.09,'#06b6d4'],['泓工作室',60,.04,'#a16207'],
+           ['津眉室',35,.10,'#16a34a'],['嬿芯藥局',70,.05,'#ea580c'],['炎錫產險',120,.08,'#7c3aed']];
+function stepStocks(){
+  G.stocks.forEach(s=>{
+    s.prev=s.price;
+    s.base=Math.min(300,Math.max(20,s.base*(1+gauss()*0.015)));
+    const ch=gauss()*s.vol+(s.base-s.price)/s.base*0.18;
+    s.price=Math.max(8,Math.round(s.price*(1+ch)));
+  });
+}
+function pushHist(){G.stocks.forEach(s=>{s.hist.push(s.price);if(s.hist.length>14)s.hist.shift();});}
+async function updateStocks(){
+  stepStocks();
+  let news='';
+  if(Math.random()<0.4){
+    const s=rnd(G.stocks),up=Math.random()<.5,pc=0.12+Math.random()*0.12;
+    s.price=Math.max(8,Math.round(s.price*(up?1+pc:1-pc)));
+    news=`${up?'📈 利多':'📉 利空'}：${s.n}${up?'大漲':'重挫'} ${Math.round(pc*100)}%`;
+  }
+  pushHist();renderSide();
+  log(`📰 第 ${G.round} 回合股市更新${news?'　'+news:''}`);
+  if(news){toast(news,1700);await sleep(1400);}
+}
+const stockVal=p=>G.stocks.reduce((a,s,i)=>a+p.stocks[i]*s.price,0);
+function addShares(p,i,n,price){p.stocks[i]+=n;p.cost[i]+=n*price;}
+function removeShares(p,i,n,price){
+  const h=p.stocks[i];if(n<=0||h<=0)return 0;n=Math.min(n,h);
+  p.cost[i]=h-n>0?p.cost[i]*(h-n)/h:0;p.stocks[i]=h-n;p.cash+=n*price;return n;
+}
+const ownedCount=p=>G.own.filter(o=>o===p.id).length;
+const landVal=p=>{let v=0;for(let i=0;i<N;i++)if(G.own[i]===p.id)v+=invested(i);return v;};
+const worth=p=>p.cash+stockVal(p)+landVal(p);
+
+/* ---------- 玩家 ---------- */
+const CHARS=[
+  {name:'書泓',emoji:'😎',color:'#e53935'},
+  {name:'政恆',emoji:'👴',color:'#1e88e5'},
+  {name:'仕年',emoji:'👸',color:'#2e9d4f'},
+  {name:'沛辰',emoji:'🤵',color:'#f08c00'}
+];
+const AIP=[null,{res:2500,greed:.95},{res:5000,greed:.7},{res:3500,greed:.85}];
+const nm=p=>`<b style="color:${p.color}">${p.emoji}${p.name}</b>`;
+
+/* ---------- UI 輔助 ---------- */
+let toastTimer=null;
+function toast(msg,ms=1300){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),ms);}
+function log(html){const lb=$('#logbox');const d=document.createElement('div');d.innerHTML=html;lb.appendChild(d);while(lb.children.length>16)lb.removeChild(lb.firstChild);}
+function closeModal(){G.modal=false;$('#modal').style.display='none';}
+function ask(title,html,btns,cls){
+  return new Promise(res=>{
+    G.modal=true;const mp=$('#mpanel');mp.className=cls||'';
+    mp.innerHTML=`<h3>${title}</h3><div class="mb">${html}</div><div class="mbtn">${btns.map(b=>`<button class="btn ${b.cls||''}" data-id="${b.id}">${b.label}</button>`).join('')}</div>`;
+    mp.onclick=e=>{const b=e.target.closest('[data-id]');if(!b)return;closeModal();res(b.dataset.id);};
+    $('#modal').style.display='flex';
+  });
+}
+const PIP={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
+const die=n=>`<div class="die">${[...Array(9).keys()].map(k=>`<i class="${PIP[n].includes(k)?'p':''}"></i>`).join('')}</div>`;
+async function rollAnim(a,b){
+  for(let i=0;i<8;i++){$('#dice').innerHTML=die(ri(1,6))+die(ri(1,6));await sleep(70);}
+  $('#dice').innerHTML=die(a)+die(b);await sleep(250);
+}
+function setBtns(){
+  $('#rollbtn').disabled=!G.rollRes;
+  $('#bStock').disabled=!G.idle;$('#bAsset').disabled=!G.idle;
+}
+
+/* ---------- 棋盤繪製 ---------- */
+const cellEls=[];
+function buildBoard(){
+  const b=$('#board');b.querySelectorAll('.cell').forEach(e=>e.remove());
+  T.forEach((t,i)=>{
+    const [r,c]=pos(i);const d=document.createElement('div');
+    d.className='cell '+(t.t==='prop'?'prop':'corner');
+    d.style.gridArea=`${r}/${c}/${r+1}/${c+1}`;
+    d.innerHTML=t.t==='prop'
+      ?`<div class="band" style="background:${GROUPS[t.g].c}"><span class="bld"></span></div><div class="nm">${t.n}</div><div class="sub"></div><div class="tk"></div>`
+      :`<div class="big">${t.e}</div><div class="nm">${t.n}</div><div class="tk"></div>`;
+    d.onclick=()=>showCell(i);
+    b.appendChild(d);cellEls[i]=d;
+  });
+}
+function paintCell(i){
+  const t=T[i];if(t.t!=='prop')return;
+  const d=cellEls[i],o=G.own[i];
+  const bld=d.querySelector('.bld'),sub=d.querySelector('.sub');
+  if(o===null){d.style.boxShadow='';d.style.background='';bld.textContent='';sub.textContent='$'+fmt(t.price);}
+  else{
+    const c=G.players[o].color;
+    d.style.boxShadow=`inset 0 0 0 3px ${c}`;
+    d.style.background=`color-mix(in srgb, ${c} 16%, var(--cell))`;
+    bld.textContent=BLD[G.lvl[i]];sub.textContent='收 $'+fmt(toll(i));
+  }
+}
+function paintAll(){for(let i=0;i<N;i++)paintCell(i);}
+function renderTokens(){
+  for(let i=0;i<N;i++){
+    const tk=cellEls[i].querySelector('.tk');
+    tk.innerHTML=G.players.filter(p=>p.alive&&p.pos===i).map(p=>`<span class="tok ${G.cur===p.id?'cur':''}" style="border-color:${p.color}">${p.emoji}</span>`).join('');
+  }
+}
+function renderSide(){
+  $('#side').innerHTML=G.players.map(p=>`<div class="pc ${p.alive?'':'dead'} ${G.cur===p.id&&p.alive?'act':''}" style="--pc:${p.color}">
+    <div class="r1"><span class="av">${p.emoji}</span>${p.name}<span class="tag">${p.alive?(p.skip>0?'休息中':''):'已破產'}</span></div>
+    <div class="cash">$${fmt(p.cash)}</div>
+    <div class="r3">📈${fmt(stockVal(p))}　🏠${ownedCount(p)} 塊　總資產 ${fmt(worth(p))}</div></div>`).join('');
+}
+function renderAll(){renderSide();paintAll();renderTokens();}
+
+/* ---------- 土地資訊 / 賣地 ---------- */
+async function showCell(i){
+  if(!G.players||G.modal||G.over)return;
+  const t=T[i];let html,btns=[{id:'x',label:'關閉',cls:'alt'}];
+  if(t.t==='prop'){
+    const g=GROUPS[t.g],o=G.own[i];
+    html=`<span class="gdot" style="background:${g.c}"></span><b>${g.n}・${t.n}</b><br>地價 $${fmt(t.price)}　升級費 $${fmt(upCost(i))}<br>`;
+    if(o===null)html+='狀態：無主空地';
+    else{html+=`地主：${nm(G.players[o])}　等級 ${G.lvl[i]}<br>目前過路費 $${fmt(toll(i))}`;
+      if(o===0&&G.idle)btns.unshift({id:'sell',label:`賣給銀行 $${fmt(sellValue(i))}`});}
+    html+=`<br><span style="color:var(--muted);font-size:12px">Lv0~4 過路費：${MULT.map((m,k)=>fmt(tollAt(i,k,false))).join(' / ')}</span>`;
+  }else{
+    html={start:'經過或停在起點可領薪水 $2,000。',chance:'抽一張機會／命運卡，可能是好事也可能是壞事。',hos:'停在這裡要休息一回合。',jail:'停在這裡要休息一回合。',stock:'停在股市可以買賣股票。你也可以在自己回合開始時按「股市」交易。'}[t.t];
+  }
+  const r=await ask(`${t.e||'📍'} ${t.n}`,html,btns);
+  if(r==='sell'&&G.idle){sellProp(G.players[0],i);log(`${nm(G.players[0])} 賣掉了 ${t.n}`);renderSide();paintAll();}
+}
+function sellProp(p,i){p.cash+=sellValue(i);G.own[i]=null;G.lvl[i]=0;paintAll();}
+
+function openAssets(p){
+  return new Promise(res=>{
+    G.modal=true;const mp=$('#mpanel');mp.className='wide';$('#modal').style.display='flex';
+    const draw=()=>{
+      const mine=[];for(let i=0;i<N;i++)if(G.own[i]===p.id)mine.push(i);
+      mp.innerHTML=`<h3>🏠 我的資產 <span class="cash">現金 $${fmt(p.cash)}</span></h3>
+      <div class="alist">${mine.length?mine.map(i=>`<div class="arow"><span class="gdot" style="background:${GROUPS[T[i].g].c}"></span><span class="f"><b>${T[i].n}</b>　${BLD[G.lvl[i]]} Lv${G.lvl[i]}　過路費 $${fmt(toll(i))}</span><button class="btn sm" data-s="${i}">賣出 $${fmt(sellValue(i))}</button></div>`).join(''):'<div class="arow">目前沒有土地。踩到空地時可以買下。</div>'}</div>
+      <div class="mbtn"><button class="btn" data-done>完成</button></div>`;
+    };
+    mp.onclick=e=>{
+      if(e.target.closest('[data-done]')){closeModal();res();return;}
+      const b=e.target.closest('[data-s]');if(!b)return;
+      const i=+b.dataset.s;log(`${nm(p)} 賣掉了 ${T[i].n}`);sellProp(p,i);renderSide();draw();
+    };
+    draw();
+  });
+}
+
+/* ---------- 股票視窗 ---------- */
+function spark(h){
+  const w=54,hh=18,mn=Math.min(...h),mx=Math.max(...h);
+  const pts=h.map((v,k)=>`${(k/(h.length-1||1))*w},${hh-((v-mn)/(mx-mn||1))*(hh-2)-1}`).join(' ');
+  const col=h[h.length-1]>=h[0]?'#d23b3b':'#1f9d55';
+  return `<svg width="${w}" height="${hh}"><polyline points="${pts}" fill="none" stroke="${col}" stroke-width="1.6"/></svg>`;
+}
+function openStock(p){
+  return new Promise(res=>{
+    G.modal=true;const mp=$('#mpanel');mp.className='wide';$('#modal').style.display='flex';
+    let tab='t';
+    const pl=(v,c)=>`<span class="${v>=0?'up':'dn'}">${v>=0?'+':'−'}${fmt(Math.abs(v))}</span>`;
+    const draw=()=>{
+      const tabs=`<div class="seg" style="margin-bottom:8px"><button data-tab="t" class="${tab==='t'?'on':''}">交易</button><button data-tab="h" class="${tab==='h'?'on':''}">我的持股・損益</button></div>`;
+      const head=`<h3>📈 股票市場 <span class="cash">現金 $${fmt(p.cash)}　持股 $${fmt(stockVal(p))}</span></h3>${tabs}`;
+      let body;
+      if(tab==='t'){
+        body=`<table class="stk"><tr><th>股票</th><th>現價</th><th>漲跌</th><th>走勢</th><th>持股</th><th>交易（每手 10 股）</th></tr>
+        ${G.stocks.map((s,i)=>{const d=(s.price-s.prev)/s.prev*100;
+          return `<tr><td><span class="gdot" style="background:${s.c}"></span><b>${s.n}</b></td><td>$${s.price}</td>
+          <td class="${d>=0?'up':'dn'}">${d>=0?'▲':'▼'}${Math.abs(d).toFixed(1)}%</td><td>${spark(s.hist)}</td><td>${p.stocks[i]}</td>
+          <td><button class="btn" data-a="b" data-i="${i}">買</button> <button class="btn alt" data-a="s" data-i="${i}">賣</button> <button class="btn alt" data-a="a" data-i="${i}">全賣</button></td></tr>`;}).join('')}</table>
+        <div style="font-size:11.5px;color:var(--muted);margin-top:6px">價格會圍繞價值上下波動，每回合更新，偶有利多利空消息。紅漲綠跌。</div>`;
+      }else{
+        let tc=0,tv=0;const rows=[];
+        G.stocks.forEach((s,i)=>{
+          const n=p.stocks[i];if(n<=0)return;
+          const c=p.cost[i],v=n*s.price,g=v-c;tc+=c;tv+=v;
+          rows.push(`<tr><td><span class="gdot" style="background:${s.c}"></span><b>${s.n}</b></td><td>${n}</td><td>$${(c/n).toFixed(1)}</td><td>$${s.price}</td><td>$${fmt(c)}</td><td>$${fmt(v)}</td><td>${pl(g)}</td><td class="${g>=0?'up':'dn'}">${g>=0?'+':'−'}${Math.abs(g/c*100).toFixed(1)}%</td><td><button class="btn alt" data-a="a" data-i="${i}">全賣</button></td></tr>`);
+        });
+        if(!rows.length)body='<div class="arow">目前沒有持股。到「交易」頁買入後，這裡會顯示成本與損益。</div>';
+        else{
+          const g=tv-tc;
+          body=`<table class="stk"><tr><th>股票</th><th>股數</th><th>均價</th><th>現價</th><th>成本</th><th>市值</th><th>損益</th><th>報酬</th><th></th></tr>${rows.join('')}
+          <tr style="font-weight:800"><td>合計</td><td></td><td></td><td></td><td>$${fmt(tc)}</td><td>$${fmt(tv)}</td><td>${pl(g)}</td><td class="${g>=0?'up':'dn'}">${g>=0?'+':'−'}${Math.abs(g/tc*100).toFixed(1)}%</td><td></td></tr></table>
+          <div style="font-size:11.5px;color:var(--muted);margin-top:6px">均價 = 買入總成本 ÷ 持股數（分批買入會自動平均）。紅賺綠賠。</div>`;
+        }
+      }
+      mp.innerHTML=head+body+`<div class="mbtn"><button class="btn" data-done>完成</button></div>`;
+    };
+    mp.onclick=e=>{
+      if(e.target.closest('[data-done]')){closeModal();res();return;}
+      const t=e.target.closest('[data-tab]');if(t){tab=t.dataset.tab;draw();return;}
+      const b=e.target.closest('[data-a]');if(!b)return;
+      const i=+b.dataset.i,s=G.stocks[i],a=b.dataset.a;
+      if(a==='b'){const cost=s.price*10;if(p.cash>=cost){p.cash-=cost;addShares(p,i,10,s.price);}else toast('現金不足');}
+      else if(a==='s')removeShares(p,i,10,s.price);
+      else removeShares(p,i,p.stocks[i],s.price);
+      renderSide();draw();
+    };
+    draw();
+  });
+}
+async function aiStocks(p){
+  const msgs=[];
+  G.stocks.forEach((s,i)=>{
+    const dev=s.price/s.base-1;
+    if(dev>0.07&&p.stocks[i]>0){removeShares(p,i,p.stocks[i],s.price);msgs.push('賣出'+s.n);}
+    else if(dev<-0.07){
+      const budget=Math.max(0,p.cash-p.ai.res*1.2)*0.35;
+      const lots=Math.min(5,Math.floor(budget/(s.price*10)));
+      if(lots>0){p.cash-=lots*10*s.price;addShares(p,i,lots*10,s.price);msgs.push('買進'+s.n);}
+    }
+  });
+  if(msgs.length){log(`${nm(p)} ${msgs.join('、')}`);renderSide();toast(`${p.emoji}${p.name}：${msgs.join('、')}`,1300);await sleep(1000);}
+}
+
+/* ---------- 付款 / 破產 ---------- */
+async function liquidate(p,target){
+  while(p.cash<target){
+    const si=G.stocks.findIndex((s,i)=>p.stocks[i]>0);
+    if(si>=0){
+      const s=G.stocks[si];const n=Math.min(p.stocks[si],Math.ceil((target-p.cash)/s.price));
+      removeShares(p,si,n,s.price);log(`💱 ${nm(p)} 賣出 ${s.n} ${n} 股還債`);
+    }else{
+      const mine=[];for(let i=0;i<N;i++)if(G.own[i]===p.id)mine.push(i);
+      if(!mine.length)break;
+      const need=target-p.cash;
+      const enough=mine.filter(i=>sellValue(i)>=need).sort((a,b)=>sellValue(a)-sellValue(b));
+      const pick=enough.length?enough[0]:mine.sort((a,b)=>sellValue(b)-sellValue(a))[0];
+      log(`🏚️ ${nm(p)} 變賣 ${T[pick].n} 還債`);sellProp(p,pick);
+    }
+    renderSide();await sleep(350);
+  }
+}
+async function pay(p,to,amt){
+  if(p.cash<amt)await liquidate(p,amt);
+  if(p.cash>=amt){p.cash-=amt;if(to)to.cash+=amt;renderSide();return true;}
+  const rest=p.cash;p.cash=0;if(to)to.cash+=rest;
+  await bankrupt(p,to);return false;
+}
+async function bankrupt(p,to){
+  p.alive=false;
+  for(let i=0;i<N;i++)if(G.own[i]===p.id){G.own[i]=null;G.lvl[i]=0;}
+  p.stocks=p.stocks.map(()=>0);p.cost=p.cost.map(()=>0);
+  renderAll();
+  log(`💥 ${nm(p)} 破產出局！`);toast(`💥 ${p.emoji}${p.name} 破產了！`,2200);
+  await sleep(1800);
+  const alive=G.players.filter(x=>x.alive);
+  if(p.human||alive.length<=1)endGame();
+}
+async function endGame(){
+  if(G.over)return;G.over=true;G.rollRes=null;G.idle=false;setBtns();
+  const me=G.players[0];const win=me.alive;
+  const rank=[...G.players].sort((a,b)=>(b.alive-a.alive)||(worth(b)-worth(a)));
+  const html=(win?'所有對手都破產了，你是最後的大富翁！':'你的資產不足以還債，被迫出局。')+
+    '<div class="alist" style="margin-top:8px">'+rank.map((p,k)=>`<div class="arow"><span>${k+1}.</span><span class="f">${nm(p)}</span><span>${p.alive?'總資產 $'+fmt(worth(p)):'破產'}</span></div>`).join('')+'</div>';
+  await sleep(600);
+  await ask(win?'🏆 你贏了！':'💸 你破產了',html,[{id:'again',label:'再玩一次'}]);
+  showMenu();
+}
+
+/* ---------- 回合流程 ---------- */
+async function playTurn(p){
+  if(!p.alive||G.over)return;
+  $('#turnlab').innerHTML=`${p.emoji} ${p.name} 的回合<small>第 ${G.round} 回合</small>`;
+  renderSide();renderTokens();
+  if(p.skip>0){
+    p.skip--;log(`${nm(p)} 休息一回合`);toast(`${p.emoji}${p.name} 休息一回合`,1000);await sleep(1100);return;
+  }
+  if(p.human){
+    toast('輪到你了！',1000);
+    await new Promise(res=>{G.idle=true;G.rollRes=res;setBtns();});
+  }else{
+    await sleep(600);await aiStocks(p);await sleep(300);
+  }
+  const a=ri(1,6),b=ri(1,6);
+  await rollAnim(a,b);
+  log(`${nm(p)} 擲出 ${a}+${b}=${a+b}`);
+  await moveBy(p,a+b);
+  if(!p.alive||G.over)return;
+  await landOn(p,0);
+  if(G.over)return;
+  await sleep(400);
+}
+async function moveBy(p,n){
+  for(let k=0;k<n;k++){
+    p.pos=(p.pos+1)%N;
+    if(p.pos===0){p.cash+=G.salary;log(`🏁 ${nm(p)} 經過起點，領薪水 $${fmt(G.salary)}`);toast(`🏁 ${p.name} 領薪水 +$${fmt(G.salary)}`,900);}
+    renderTokens();renderSide();await sleep(150);
+  }
+}
+async function nextPlayer(){
+  const n=G.players.length;let wrapped=false;
+  for(let k=0;k<n;k++){
+    const nx=(G.cur+1)%n;if(nx<=G.cur)wrapped=true;G.cur=nx;
+    if(G.players[nx].alive)break;
+  }
+  if(wrapped){G.round++;await updateStocks();}
+}
+async function gameLoop(){
+  const g=gid;
+  while(!G.over&&g===gid){
+    await playTurn(G.players[G.cur]);
+    if(G.over||g!==gid)break;
+    await nextPlayer();
+  }
+}
+
+async function landOn(p,depth){
+  const i=p.pos,t=T[i];
+  if(t.t==='prop')await landProp(p,i);
+  else if(t.t==='chance')await landChance(p,depth);
+  else if(t.t==='stock'){
+    log(`${nm(p)} 來到股市`);
+    if(p.human)await openStock(p);else await aiStocks(p);
+  }
+  else if(t.t==='hos'||t.t==='jail'){
+    p.skip=1;log(`${nm(p)} 進了${t.n}，休息一回合`);toast(`${t.e} ${p.name} 進了${t.n}，休息一回合`,1300);await sleep(1300);
+  }
+}
+function countGroup(id,g){return T.filter((x,j)=>x.t==='prop'&&x.g===g&&G.own[j]===id).length;}
+async function landProp(p,i){
+  const t=T[i],g=GROUPS[t.g],o=G.own[i];
+  if(o===null){
+    const price=t.price;
+    if(p.cash<price){
+      log(`${nm(p)} 現金不足，買不起 ${t.n}`);
+      if(p.human){toast(`現金不足，買不起 ${t.n}（$${fmt(price)}）`,1500);await sleep(1500);}
+      return;
+    }
+    let buy;
+    if(p.human){
+      const html=`<span class="gdot" style="background:${g.c}"></span><b>${g.n}・${t.n}</b><br>地價 $${fmt(price)}　（你的現金 $${fmt(p.cash)}）<br>空地過路費 $${fmt(tollAt(i,0,false))}，蓋到 4 級可收 $${fmt(tollAt(i,4,false))}。`;
+      buy=(await ask('🏞️ 要買下這塊地嗎？',html,[{id:'n',label:'不買',cls:'alt'},{id:'y',label:`買下 $${fmt(price)}`}]))==='y';
+    }else{
+      const left=p.cash-price,mine=countGroup(p.id,t.g);
+      buy=left>=p.ai.res*0.4&&((mine>=1&&left>=p.ai.res*0.6)||(left>=p.ai.res&&Math.random()<p.ai.greed));
+    }
+    if(buy){
+      p.cash-=price;G.own[i]=p.id;G.lvl[i]=0;paintAll();renderSide();
+      log(`🏞️ ${nm(p)} 買下 ${t.n} $${fmt(price)}`);
+      if(!p.human){toast(`${p.emoji}${p.name} 買下 ${t.n}`,1100);await sleep(1100);}
+    }
+  }else if(o===p.id){
+    const lv=G.lvl[i];
+    if(lv>=4){log(`${nm(p)} 的 ${t.n} 已是最高級`);return;}
+    const cost=upCost(i);
+    if(p.cash<cost){if(p.human){toast(`現金不足，無法升級（$${fmt(cost)}）`,1300);await sleep(1300);}return;}
+    let up;
+    if(p.human){
+      const m=mono(i,p.id);
+      const html=`<span class="gdot" style="background:${g.c}"></span><b>${t.n}</b>　Lv${lv} ${BLD[lv]} → Lv${lv+1} ${BLD[lv+1]}<br>費用 $${fmt(cost)}　（你的現金 $${fmt(p.cash)}）<br>過路費 $${fmt(tollAt(i,lv,m))} → $${fmt(tollAt(i,lv+1,m))}`;
+      up=(await ask('🔨 要升級嗎？',html,[{id:'n',label:'不用',cls:'alt'},{id:'y',label:`升級 $${fmt(cost)}`}]))==='y';
+    }else up=p.cash-cost>=p.ai.res*0.9;
+    if(up){
+      p.cash-=cost;G.lvl[i]++;paintAll();renderSide();
+      log(`🔨 ${nm(p)} 把 ${t.n} 升到 Lv${G.lvl[i]}`);
+      if(!p.human){toast(`${p.emoji}${p.name} 升級 ${t.n} → Lv${G.lvl[i]}`,1100);await sleep(1100);}
+    }
+  }else{
+    const owner=G.players[o],amt=toll(i);
+    log(`💸 ${nm(p)} 踩到 ${nm(owner)} 的 ${t.n}，付過路費 $${fmt(amt)}`);
+    toast(`💸 ${p.name} 付給 ${owner.name} 過路費 $${fmt(amt)}`,1600);
+    await sleep(900);
+    const ok=await pay(p,owner,amt);
+    if(ok)await sleep(500);
+  }
+}
+
+/* ---------- 機會 / 命運 ---------- */
+async function card(p,text){
+  log(`🎴 ${nm(p)}：${text}`);
+  if(p.human)await ask('🎴 機會／命運',`<div class="cardtxt">${text}</div>`,[{id:'ok',label:'確定'}]);
+  else{toast(`${p.emoji}${p.name}：${text}`,1800);await sleep(1900);}
+}
+const EVENTS=[
+  async p=>{const a=rnd([1000,1500,2000,3000]);await card(p,`🎁 中了小獎，獲得 $${fmt(a)}`);p.cash+=a;},
+  async p=>{const a=rnd([500,800,1200,2000]);await card(p,`🧾 補繳稅金 $${fmt(a)}`);await pay(p,null,a);},
+  async p=>{await card(p,'🎂 今天生日！每位玩家送你 $300');for(const q of G.players)if(q.alive&&q!==p){const a=Math.min(300,q.cash);q.cash-=a;p.cash+=a;}},
+  async (p,d)=>{if(d>=2){await card(p,'☀️ 天氣晴朗，平安無事');return;}await card(p,'🏃 精神飽滿，前進 3 格');await moveBy(p,3);if(p.alive)await landOn(p,d+1);},
+  async (p,d)=>{if(d>=2){await card(p,'☀️ 天氣晴朗，平安無事');return;}await card(p,'😵 走錯路，後退 3 格');p.pos=(p.pos+N-3)%N;renderTokens();await sleep(500);await landOn(p,d+1);},
+  async p=>{await card(p,'🤒 感冒住院，休息一回合');p.skip=1;},
+  async p=>{const v=Math.floor(stockVal(p)*0.12);const a=v>0?v:500;await card(p,v>0?`💹 股利發放，獲得持股價值 12%：$${fmt(a)}`:`💹 領到安慰性股東禮金 $500`);p.cash+=a;},
+  async p=>{const i=ri(0,G.stocks.length-1);await card(p,`📄 朋友送你 ${G.stocks[i].n} 10 股`);addShares(p,i,10,G.stocks[i].price);},
+  async p=>{
+    const c=[];for(let i=0;i<N;i++)if(T[i].t==='prop'&&G.lvl[i]>0)c.push(i);
+    if(!c.length){await card(p,'🍀 平安無事，撿到 $500');p.cash+=500;return;}
+    const i=rnd(c);await card(p,`🌀 颱風來襲！${T[i].n} 的建築受損，降一級`);G.lvl[i]--;paintAll();
+  },
+  async p=>{
+    const c=[];for(let i=0;i<N;i++)if(G.own[i]===p.id&&G.lvl[i]<4)c.push(i);
+    if(!c.length){await card(p,'🏛️ 獲得政府補助 $1,000');p.cash+=1000;return;}
+    const i=rnd(c);await card(p,`🏗️ 政府補助！${T[i].n} 免費升一級`);G.lvl[i]++;paintAll();
+  },
+  async p=>{if(Math.random()<0.2){await card(p,'🎟️ 買彩券中了頭獎！獲得 $6,000');p.cash+=6000;}else{await card(p,'🎟️ 買彩券沒中，損失 $300');await pay(p,null,300);}},
+  async (p,d)=>{if(d>=2){await card(p,'☀️ 天氣晴朗，平安無事');return;}await card(p,'🚄 搭高鐵直達股市！');p.pos=14;renderTokens();await sleep(500);await landOn(p,d+1);},
+  async p=>{await card(p,`🏁 傳送回起點，領薪水 $${fmt(G.salary)}`);p.pos=0;p.cash+=G.salary;renderTokens();}
+];
+async function landChance(p,d){log(`${nm(p)} 抽機會／命運卡`);await rnd(EVENTS)(p,d);}
+
+/* ---------- 開始 / 選單 ---------- */
+function startGame(n,cash){
+  gid++;closeModal();
+  G={players:[],own:Array(N).fill(null),lvl:Array(N).fill(0),stocks:[],round:1,cur:0,salary:2000,modal:false,idle:false,rollRes:null,over:false};
+  const scale=cash/30000;
+  for(let i=0;i<n;i++)G.players.push({id:i,name:CHARS[i].name,emoji:CHARS[i].emoji,color:CHARS[i].color,human:i===0,
+    cash,pos:0,skip:0,alive:true,stocks:Array(STK.length).fill(0),cost:Array(STK.length).fill(0),
+    ai:AIP[i]?{res:AIP[i].res*scale,greed:AIP[i].greed}:null});
+  G.stocks=STK.map(([n,p,v,c])=>({n,price:p,base:p,prev:p,vol:v,c,hist:[p]}));
+  for(let k=0;k<8;k++){stepStocks();pushHist();}
+  buildBoard();$('#logbox').innerHTML='';$('#dice').innerHTML=die(1)+die(1);
+  setBtns();renderAll();
+  $('#menu').style.display='none';
+  log(`🎲 遊戲開始！每人起始資金 $${fmt(cash)}，目標：讓所有對手破產`);
+  gameLoop();
+}
+function showMenu(){gid++;closeModal();$('#menu').style.display='flex';}
+let selN=3,selC=30000;
+function seg(id,cb){const el=$(id);el.onclick=e=>{const b=e.target.closest('button');if(!b)return;el.querySelectorAll('button').forEach(x=>x.classList.remove('on'));b.classList.add('on');cb(+b.dataset.v);};}
+seg('#segN',v=>selN=v);seg('#segC',v=>selC=v);
+$('#startBtn').onclick=()=>startGame(selN,selC);
+
+$('#rollbtn').onclick=()=>{if(G.rollRes&&!G.modal){const r=G.rollRes;G.rollRes=null;G.idle=false;setBtns();r();}};
+$('#bStock').onclick=async()=>{if(!G.idle||G.modal)return;await openStock(G.players[0]);};
+$('#bAsset').onclick=async()=>{if(!G.idle||G.modal)return;await openAssets(G.players[0]);};
+$('#bSpeed').onclick=()=>{speed=speed===1?2:speed===2?3:1;$('#bSpeed').textContent=`⏩ ×${speed}`;};
+$('#bMenu').onclick=async()=>{
+  if(G.modal)return;
+  const r=await ask('選單','要繼續遊戲，還是重新開始？',[{id:'c',label:'繼續',cls:'alt'},{id:'r',label:'重新開始'}]);
+  if(r==='r')showMenu();
+};
+$('#bFull').onclick=()=>{
+  const el=document.documentElement;
+  if(document.fullscreenElement){document.exitFullscreen();return;}
+  if(el.requestFullscreen){
+    el.requestFullscreen().then(()=>{try{screen.orientation.lock('landscape').catch(()=>{});}catch(e){}}).catch(()=>toast('無法進入全螢幕'));
+  }else toast('此瀏覽器不支援全螢幕，iPhone 請用「加入主畫面」',2200);
+};
+document.addEventListener('fullscreenchange',()=>setTimeout(fit,150));
+})();
+</script>
+</body>
+</html>
